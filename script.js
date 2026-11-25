@@ -2,29 +2,7 @@
 (function() {
   'use strict';
 
-  // ---------- WORD BANK ----------
-  const wordBank = [
-    { word: 'accommodate', difficulty: 'Hard' },
-    { word: 'rhythm', difficulty: 'Medium' },
-    { word: 'necessary', difficulty: 'Medium' },
-    { word: 'beautiful', difficulty: 'Easy' },
-    { word: 'separate', difficulty: 'Medium' },
-    { word: 'definitely', difficulty: 'Medium' },
-    { word: 'embarrass', difficulty: 'Hard' },
-    { word: 'occurrence', difficulty: 'Hard' },
-    { word: 'conscience', difficulty: 'Hard' },
-    { word: 'pronunciation', difficulty: 'Hard' },
-    { word: 'environment', difficulty: 'Medium' },
-    { word: 'government', difficulty: 'Medium' },
-    { word: 'independent', difficulty: 'Medium' },
-    { word: 'recommend', difficulty: 'Medium' },
-    { word: 'existence', difficulty: 'Medium' },
-    { word: 'maintenance', difficulty: 'Hard' },
-    { word: 'curiosity', difficulty: 'Medium' },
-    { word: 'definite', difficulty: 'Medium' },
-    { word: 'apparent', difficulty: 'Medium' },
-    { word: 'argument', difficulty: 'Easy' }
-  ];
+  const STORAGE_KEY = 'spellRightWords';
 
   // ---------- STATE ----------
   let currentWordIndex = 0;
@@ -44,6 +22,7 @@
   const submitBtn = document.getElementById('submitBtn');
   const feedbackMessage = document.getElementById('feedbackMessage');
   const progressBar = document.getElementById('progressBar');
+  const showSpellingBtn = document.getElementById('showSpellingBtn');
   const skipBtn = document.getElementById('skipBtn');
   const nextBtn = document.getElementById('nextBtn');
   const resetBtn = document.getElementById('resetBtn');
@@ -52,6 +31,10 @@
   const mistakeDisplay = document.getElementById('mistakeDisplay');
   const historyList = document.getElementById('historyList');
   const spellingCard = document.getElementById('spellingCard');
+  const wordSetupInput = document.getElementById('wordSetupInput');
+  const saveWordsBtn = document.getElementById('saveWordsBtn');
+  const clearWordsBtn = document.getElementById('clearWordsBtn');
+  const setupStatus = document.getElementById('setupStatus');
 
   // ---------- SPEECH SYNTHESIS ----------
   function speakWord(word) {
@@ -59,7 +42,6 @@
       audioHint.textContent = 'Speech not supported.';
       return;
     }
-    // Cancel any ongoing speech
     window.speechSynthesis.cancel();
 
     const utterance = new SpeechSynthesisUtterance(word);
@@ -68,10 +50,9 @@
     utterance.volume = 1;
     utterance.lang = 'en-US';
 
-    // Choose a voice (prefer a natural one)
     const voices = window.speechSynthesis.getVoices();
-    const preferred = voices.find(v => v.lang.startsWith('en') && v.name.includes('Google'));
-    const englishVoice = voices.find(v => v.lang.startsWith('en'));
+    const preferred = voices.find(v => /^en/i.test(v.lang) && /natural|google/i.test(v.name));
+    const englishVoice = voices.find(v => /^en/i.test(v.lang));
     if (preferred) utterance.voice = preferred;
     else if (englishVoice) utterance.voice = englishVoice;
 
@@ -94,11 +75,62 @@
     return copy;
   }
 
+  // ---------- WORD STORAGE ----------
+  function getSavedWords() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      return Array.isArray(saved) ? saved : [];
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function parseWords(text) {
+    const seen = new Set();
+    return text
+      .split(',')
+      .map(word => word.trim())
+      .filter(word => {
+        if (!word) return false;
+        const key = word.toLocaleLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+  }
+
+  function saveWords() {
+    const words = parseWords(wordSetupInput.value);
+    if (words.length === 0) {
+      setupStatus.textContent = 'Enter at least one word separated by commas.';
+      setupStatus.style.color = 'var(--error)';
+      return;
+    }
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(words));
+    setupStatus.textContent = `${words.length} word${words.length === 1 ? '' : 's'} saved.`;
+    setupStatus.style.color = 'var(--success)';
+    initSession();
+  }
+
+  function clearWords() {
+    localStorage.removeItem(STORAGE_KEY);
+    wordSetupInput.value = '';
+    setupStatus.textContent = 'Saved words cleared.';
+    setupStatus.style.color = 'var(--text-light)';
+    initSession();
+  }
+
   // ---------- INITIALIZE SESSION ----------
   function initSession() {
-    // Create a shuffled subset of 10 words (if fewer than 10, use all)
-    const shuffled = shuffleArray(wordBank);
-    wordList = shuffled.slice(0, 10);
+    const savedWords = getSavedWords();
+    if (wordSetupInput.value.trim() === '' && savedWords.length > 0) {
+      wordSetupInput.value = savedWords.join(', ');
+    }
+    wordList = shuffleArray(savedWords.map(word => ({
+      word,
+      difficulty: 'Custom'
+    })));
     currentWordIndex = 0;
     score = 0;
     correctCount = 0;
@@ -108,16 +140,34 @@
     updateStatsUI();
     renderHistory();
     loadWord(0);
-    spellingInput.disabled = false;
-    submitBtn.disabled = false;
-    nextBtn.disabled = true;
-    spellingInput.focus();
-    feedbackMessage.textContent = '';
-    feedbackMessage.className = 'feedback-message';
+    if (wordList.length > 0) {
+      spellingInput.disabled = false;
+      submitBtn.disabled = false;
+      nextBtn.disabled = true;
+      spellingInput.focus();
+      feedbackMessage.textContent = '';
+      feedbackMessage.className = 'feedback-message';
+    }
   }
 
   // ---------- LOAD A WORD ----------
   function loadWord(index) {
+    if (wordList.length === 0) {
+      wordCounter.textContent = 'No words';
+      difficultyBadge.textContent = 'Setup';
+      audioHint.textContent = 'Add words in the setup section';
+      spellingInput.value = '';
+      spellingInput.disabled = true;
+      submitBtn.disabled = true;
+      showSpellingBtn.disabled = true;
+      skipBtn.disabled = true;
+      nextBtn.disabled = true;
+      feedbackMessage.textContent = 'Enter your spelling words above, then save them.';
+      feedbackMessage.className = 'feedback-message info';
+      progressBar.style.width = '0%';
+      return;
+    }
+
     if (index >= wordList.length) {
       // end of session
       wordCounter.textContent = `Completed!`;
@@ -126,6 +176,7 @@
       spellingInput.disabled = true;
       submitBtn.disabled = true;
       nextBtn.disabled = true;
+      showSpellingBtn.disabled = true;
       skipBtn.disabled = true;
       feedbackMessage.textContent = `You completed the practice! Score: ${score}`;
       feedbackMessage.className = 'feedback-message info';
@@ -148,6 +199,7 @@
     feedbackMessage.textContent = '';
     feedbackMessage.className = 'feedback-message';
     submitBtn.disabled = false;
+    showSpellingBtn.disabled = false;
     skipBtn.disabled = false;
     nextBtn.disabled = true;
 
@@ -202,6 +254,7 @@
         feedbackMessage.className = 'feedback-message correct';
         spellingInput.disabled = true;
         submitBtn.disabled = true;
+        showSpellingBtn.disabled = true;
         nextBtn.disabled = false;
         // Add to history
         attempts.push({ word: currentEntry.word, correct: true });
@@ -215,6 +268,7 @@
         feedbackMessage.className = 'feedback-message error';
         spellingInput.disabled = true;
         submitBtn.disabled = true;
+        showSpellingBtn.disabled = true;
         nextBtn.disabled = false;
         spellingCard.classList.add('shake');
         setTimeout(() => spellingCard.classList.remove('shake'), 300);
@@ -246,10 +300,35 @@
       loadWord(wordList.length); // triggers finished state
       progressBar.style.width = '100%';
       nextBtn.disabled = true;
+      showSpellingBtn.disabled = true;
       skipBtn.disabled = true;
       spellingInput.disabled = true;
       submitBtn.disabled = true;
     }
+  }
+
+  // ---------- SHOW SPELLING ----------
+  function showSpelling() {
+    if (currentWordIndex >= wordList.length || currentAnswerRevealed) return;
+
+    const currentEntry = wordList[currentWordIndex];
+    mistakeCount++;
+    attempts.push({ word: currentEntry.word, correct: false });
+    renderHistory();
+    updateStatsUI();
+
+    feedbackMessage.textContent = `The correct spelling is: "${currentEntry.word}".`;
+    feedbackMessage.className = 'feedback-message info';
+
+    spellingInput.value = currentEntry.word;
+    spellingInput.disabled = true;
+    submitBtn.disabled = true;
+    showSpellingBtn.disabled = true;
+    nextBtn.disabled = false;
+    currentAnswerRevealed = true;
+
+    const progressPercent = ((currentWordIndex + 1) / wordList.length) * 100;
+    progressBar.style.width = `${progressPercent}%`;
   }
 
   // ---------- SKIP WORD (counts as mistake) ----------
@@ -273,6 +352,7 @@
 
     spellingInput.disabled = true;
     submitBtn.disabled = true;
+    showSpellingBtn.disabled = true;
     nextBtn.disabled = false;
     currentAnswerRevealed = true;
 
@@ -343,8 +423,15 @@
     // Skip button
     skipBtn.addEventListener('click', skipWord);
 
+    // Show spelling button
+    showSpellingBtn.addEventListener('click', showSpelling);
+
     // Reset
     resetBtn.addEventListener('click', resetGame);
+
+    // Save or clear setup words
+    saveWordsBtn.addEventListener('click', saveWords);
+    clearWordsBtn.addEventListener('click', clearWords);
 
     // Auto-focus input after audio
     playAudioBtn.addEventListener('click', () => {

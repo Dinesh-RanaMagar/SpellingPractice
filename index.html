@@ -6,7 +6,7 @@
   <title>Spelling Practice · Learn with ease</title>
   <!-- Font Awesome for icons (free) -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -17,10 +17,11 @@
         <i class="fas fa-spell-check"></i>
         <span class="logo-text">SpellRight</span>
       </div>
-      <nav class="nav-links">
-        <a href="#" class="active">Practice</a>
-        <a href="#">Word Lists</a>
-        <a href="#">Progress</a>
+      <nav class="nav-links" aria-label="Primary navigation">
+        <a href="#practice" class="active" aria-current="page">Practice</a>
+        <a href="#setup">Setup</a>
+        <a href="#history">Word History</a>
+        <a href="#stats">Progress</a>
       </nav>
       <div class="user-badge">
         <i class="fas fa-user-graduate"></i>
@@ -39,8 +40,28 @@
         <p class="hero-sub">Listen, type, and improve — one word at a time.</p>
       </section>
 
+      <section class="setup-section" id="setup">
+        <div class="setup-heading">
+          <div>
+            <h2><i class="fas fa-list-ul"></i> Word Setup</h2>
+            <p>Enter words separated by commas.</p>
+          </div>
+        </div>
+        <label class="setup-label" for="wordSetupInput">Spelling words</label>
+        <textarea id="wordSetupInput" rows="4" placeholder="Apple, Ball, Cat, Elephant"></textarea>
+        <div class="setup-actions">
+          <button type="button" class="submit-btn" id="saveWordsBtn">
+            <i class="fas fa-save"></i> Save Words
+          </button>
+          <button type="button" class="ctrl-btn" id="clearWordsBtn">
+            <i class="fas fa-trash"></i> Clear
+          </button>
+        </div>
+        <div class="setup-status" id="setupStatus" role="status" aria-live="polite"></div>
+      </section>
+
       <!-- Two column layout: practice card + stats/help -->
-      <div class="practice-grid">
+      <div class="practice-grid" id="practice">
 
         <!-- LEFT: SPELLING CARD -->
         <div class="spelling-card" id="spellingCard">
@@ -51,7 +72,7 @@
 
           <!-- Audio button & hint -->
           <div class="audio-section">
-            <button class="audio-btn" id="playAudioBtn" aria-label="Listen to word">
+            <button type="button" class="audio-btn" id="playAudioBtn" aria-label="Listen to word">
               <i class="fas fa-volume-up"></i>
             </button>
             <span class="audio-hint" id="audioHint">Tap to hear the word</span>
@@ -59,14 +80,14 @@
 
           <!-- Input area -->
           <div class="input-area">
-            <input type="text" id="spellingInput" placeholder="Type the word..." autocomplete="off" autocapitalize="off" spellcheck="false">
-            <button class="submit-btn" id="submitBtn">
+            <input type="text" id="spellingInput" placeholder="Type the word..." autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Spelling answer">
+            <button type="button" class="submit-btn" id="submitBtn">
               <i class="fas fa-arrow-right"></i> Check
             </button>
           </div>
 
           <!-- Feedback message -->
-          <div class="feedback-message" id="feedbackMessage"></div>
+          <div class="feedback-message" id="feedbackMessage" role="status" aria-live="polite"></div>
 
           <!-- Progress bar -->
           <div class="progress-container">
@@ -75,14 +96,15 @@
 
           <!-- Controls -->
           <div class="card-controls">
-            <button class="ctrl-btn" id="skipBtn"><i class="fas fa-forward"></i> Skip</button>
-            <button class="ctrl-btn" id="nextBtn" disabled><i class="fas fa-chevron-right"></i> Next</button>
-            <button class="ctrl-btn reset-btn" id="resetBtn"><i class="fas fa-rotate-left"></i> Reset</button>
+            <button type="button" class="ctrl-btn" id="showSpellingBtn"><i class="fas fa-eye"></i> Show Spelling</button>
+            <button type="button" class="ctrl-btn" id="skipBtn"><i class="fas fa-forward"></i> Skip</button>
+            <button type="button" class="ctrl-btn" id="nextBtn" disabled><i class="fas fa-chevron-right"></i> Next</button>
+            <button type="button" class="ctrl-btn reset-btn" id="resetBtn"><i class="fas fa-rotate-left"></i> Reset</button>
           </div>
         </div>
 
         <!-- RIGHT: STATS & TIPS -->
-        <div class="stats-panel">
+        <div class="stats-panel" id="stats">
           <div class="stat-card">
             <i class="fas fa-trophy"></i>
             <div class="stat-info">
@@ -112,7 +134,7 @@
       </div>
 
       <!-- Word history / recent words -->
-      <section class="history-section">
+      <section class="history-section" id="history">
         <h3><i class="fas fa-history"></i> Recent words</h3>
         <div class="history-list" id="historyList">
           <span class="empty-history">No words attempted yet.</span>
@@ -125,7 +147,7 @@
   <!-- ===== FOOTER ===== -->
   <footer class="site-footer">
     <div class="container">
-      <p>© 2025 SpellRight · Practice makes perfect</p>
+      <p>© 2026 SpellRight · Practice makes perfect</p>
     </div>
   </footer>
 
